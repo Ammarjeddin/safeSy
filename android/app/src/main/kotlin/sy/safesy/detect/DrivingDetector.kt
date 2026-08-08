@@ -39,11 +39,30 @@ class DrivingDetector(
 
     private val pending = mutableListOf<DetectedEvent>()
 
+    // --- Observability. Read-only; for the debug/drive-test screen. ---
+    val isCalibrated: Boolean get() = calibrated
+    /** 0f..1f progress through the calibration window. */
+    val calibrationProgress: Float
+        get() = firstSampleMs?.let { first ->
+            if (calibrated) 1f
+            else ((lastImuMs - first) / 1000f / config.calibrationSeconds).coerceIn(0f, 1f)
+        } ?: 0f
+    fun isMountSuppressed(tMs: Long) = orientation.isSuppressed(tMs)
+    var lastLinear: LinearAccel? = null
+        private set
+    val lastGpsAccel: Float get() = gnssAccelMps2
+    private var lastImuMs = 0L
+
     /** Feed one IMU sample (50 Hz). */
     fun onImu(s: ImuSample) {
         if (firstSampleMs == null) firstSampleMs = s.tMs
+        lastImuMs = s.tMs
 
         orientation.update(s)?.let { pending += it }
+
+        // Publish the accel breakdown even during calibration — a tester
+        // watching the debug screen needs to see the sensor is alive.
+        lastLinear = orientation.linearAccel(s)
 
         // Calibration: learn the mounting orientation before trusting IMU events.
         if (!calibrated) {
@@ -57,6 +76,7 @@ class DrivingDetector(
         if (orientation.isSuppressed(s.tMs)) return
 
         val la = orientation.linearAccel(s)
+        lastLinear = la
 
         // --- Crash: total magnitude, checked BEFORE the sustained-duration rule.
         // An impact lasts ~120 ms, so requiring a sustained excursion would miss

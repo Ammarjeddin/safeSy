@@ -38,7 +38,7 @@ android {
     }
     kotlin { compilerOptions { jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17) } }
 
-    buildFeatures { compose = true }
+    buildFeatures { compose = true; buildConfig = true }
 
     // Arabic is the primary locale; English kept for development.
     androidResources { localeFilters += setOf("ar", "en") }
