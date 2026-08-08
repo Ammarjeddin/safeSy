@@ -1,0 +1,14 @@
+# Section owners. A section is a directory with its own README.
+#
+# Unassigned sections have no owner line — anyone may claim one by opening a PR
+# adding themselves here. Owning a section means reviewing PRs that touch it,
+# not exclusive rights to it.
+
+# /proto/                     @owner   # wire contract — changes affect every client
+# /spec/                      @owner
+# /conformance/               @owner
+# /server/                    @owner   # ingest, scoring, portal
+# /android/app/src/main/kotlin/sy/safesy/policy/  @owner
+# /android/app/src/main/kotlin/sy/safesy/detect/  @owner
+# /android/app/src/main/kotlin/sy/safesy/outbox/  @owner
+# /android/app/src/main/kotlin/sy/safesy/ui/      @owner

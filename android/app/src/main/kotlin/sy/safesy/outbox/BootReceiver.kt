@@ -1,4 +1,4 @@
-package sy.safesy.sync
+package sy.safesy.outbox
 
 import android.content.BroadcastReceiver
 import android.content.Context

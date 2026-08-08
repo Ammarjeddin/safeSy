@@ -1,11 +1,11 @@
-package sy.safesy
+package sy.safesy.policy
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import sy.safesy.trip.OrphanResolver
-import sy.safesy.trip.OrphanResolver.Decision
-import sy.safesy.trip.TripState
+import sy.safesy.policy.OrphanResolver
+import sy.safesy.policy.OrphanResolver.Decision
+import sy.safesy.policy.TripState
 
 class TripStateTest {
 
