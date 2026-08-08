@@ -1,0 +1,69 @@
+name: Android
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # JDK 17 specifically — AGP does not handle newer JDKs reliably.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: android-actions/setup-android@v3
+
+      # We invoke protoc directly rather than via protobuf-gradle-plugin,
+      # which does not support AGP 9. Version must match the protobuf-java
+      # runtime pinned in gradle/libs.versions.toml.
+      - name: Install protoc
+        run: |
+          sudo apt-get update && sudo apt-get install -y protobuf-compiler
+          protoc --version
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Build
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Unit tests
+        working-directory: android
+        run: ./gradlew testDebugUnitTest --no-daemon
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: safesy-debug-apk
+          path: android/app/build/outputs/apk/debug/*.apk
+          retention-days: 14
+
+  proto:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # need history to diff the schema against main
+
+      - name: Install protoc
+        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
+
+      # The schema is the contract shared with the server and the future
+      # embedded client. A break here breaks every client at once.
+      - name: Validate schema compiles
+        run: protoc --proto_path=proto --descriptor_set_out=/dev/null proto/safesy/v1/telemetry.proto
+
+      # A renumbered or removed field silently corrupts data on every phone
+      # running an older build. This is the invariant most easily broken by
+      # a well-meaning cleanup.
+      - name: Check backward compatibility
+        run: |
+          git fetch origin main --depth=1
+          scripts/check-proto-compat.sh origin/main
