@@ -87,6 +87,7 @@ class SensorPump(private val context: Context) : SensorEventListener, LocationLi
         traceFile = File(dir, "drive-$stamp.csv").apply {
             appendText("elapsed_s,lat,lon,speed_kmh,hdop,provider,imu_hz,gnss_hz," +
                 "accel_total,accel_vert,accel_horiz,gps_accel,calibrated,mount_suppressed," +
+                "sats_seen,sats_used," +
                 "rat,rssi,data_ok,batt_pct,batt_temp_c,charging,tx_bytes,rx_bytes\n")
         }
         eventFile = File(dir, "events-$stamp.csv").apply {
@@ -149,11 +150,13 @@ class SensorPump(private val context: Context) : SensorEventListener, LocationLi
         override fun onSatelliteStatusChanged(status: GnssStatus) {
             var visible = 0
             var used = 0
+            val cn0 = ArrayList<Float>(status.satelliteCount)
             for (i in 0 until status.satelliteCount) {
                 visible++
+                cn0 += status.getCn0DbHz(i)
                 if (status.usedInFix(i)) used++
             }
-            DebugMetrics.update { it.copy(satsVisible = visible, satsUsed = used) }
+            DebugMetrics.update { it.copy(satsVisible = visible, satsUsed = used, satCn0 = cn0) }
         }
     }
 
@@ -254,6 +257,7 @@ class SensorPump(private val context: Context) : SensorEventListener, LocationLi
                 "$imuHz,$gnssHz,${detector.lastLinear?.totalMag ?: 0f},${detector.lastLinear?.vertical ?: 0f}," +
                 "${detector.lastLinear?.horizontalMag ?: 0f},${detector.lastGpsAccel}," +
                 "${detector.isCalibrated},${detector.isMountSuppressed(now)}," +
+                "${snap.satsVisible},${snap.satsUsed}," +
                 "$rat,$rssi,$dataOk,$pct,$tempC,$charging,$tx,$rx\n"
             )
         }
