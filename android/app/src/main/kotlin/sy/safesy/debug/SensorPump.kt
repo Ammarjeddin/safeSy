@@ -9,6 +9,7 @@ import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.location.Location
 import android.location.LocationListener
+import android.location.GnssStatus
 import android.location.LocationManager
 import android.net.TrafficStats
 import java.io.File
@@ -103,10 +104,37 @@ class SensorPump(private val context: Context) : SensorEventListener, LocationLi
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)
             == PackageManager.PERMISSION_GRANTED
         ) {
+            // Request BOTH providers.
+            //
+            // A cold GNSS start needs 30-90 s of clear sky to download ephemeris.
+            // On a short trip — or one starting indoors, in an urban canyon, or
+            // behind a coated windscreen — the receiver may never finish, and
+            // requesting GPS alone means the app shows NOTHING rather than a
+            // degraded position.
+            //
+            // The strict rule still holds: only genuine GPS_PROVIDER fixes are
+            // authoritative for time (network fixes carry the untrusted system
+            // clock), which `fromGpsProvider` and the `provider` field track.
             runCatching {
                 locationManager.requestLocationUpdates(
                     LocationManager.GPS_PROVIDER, 1000L, 0f, this,
                 )
+            }
+            runCatching {
+                locationManager.requestLocationUpdates(
+                    LocationManager.NETWORK_PROVIDER, 1000L, 0f, this,
+                )
+            }
+            // Seed from the last known fix so the screen is useful immediately
+            // instead of blank for the first minute.
+            runCatching {
+                locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
+                    ?.let { onLocationChanged(it) }
+            }
+            // Satellite visibility — lets a tester SEE acquisition progress
+            // rather than staring at an empty screen wondering if it is broken.
+            runCatching {
+                locationManager.registerGnssStatusCallback(gnssCallback, null)
             }
         }
     }
@@ -114,6 +142,19 @@ class SensorPump(private val context: Context) : SensorEventListener, LocationLi
     fun stop() {
         sensorManager.unregisterListener(this)
         runCatching { locationManager.removeUpdates(this) }
+        runCatching { locationManager.unregisterGnssStatusCallback(gnssCallback) }
+    }
+
+    private val gnssCallback = object : GnssStatus.Callback() {
+        override fun onSatelliteStatusChanged(status: GnssStatus) {
+            var visible = 0
+            var used = 0
+            for (i in 0 until status.satelliteCount) {
+                visible++
+                if (status.usedInFix(i)) used++
+            }
+            DebugMetrics.update { it.copy(satsVisible = visible, satsUsed = used) }
+        }
     }
 
     override fun onSensorChanged(event: SensorEvent) {
@@ -139,7 +180,10 @@ class SensorPump(private val context: Context) : SensorEventListener, LocationLi
         val isGps = loc.provider == LocationManager.GPS_PROVIDER
         val hdop = if (loc.hasAccuracy()) loc.accuracy / 5f else 99f  // rough proxy
 
-        detector.onGnss(
+        // Network fixes are display-only: they have ~100 m accuracy and no
+        // usable speed, so feeding them to the detector would manufacture
+        // phantom acceleration from position noise.
+        if (isGps) detector.onGnss(
             GnssSample(
                 tMs = loc.elapsedRealtimeNanos / 1_000_000,
                 lat = loc.latitude,

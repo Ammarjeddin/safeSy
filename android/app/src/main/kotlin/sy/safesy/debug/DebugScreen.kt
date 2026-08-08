@@ -1,6 +1,11 @@
 package sy.safesy.debug
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -25,6 +30,11 @@ import kotlin.math.roundToInt
 /**
  * Drive-test debug screen. DEBUG BUILDS ONLY.
  *
+ * OUTDOOR READABILITY: this uses DARK TEXT ON WHITE, not the usual dark theme.
+ * In direct sunlight an LCD's black pixels still emit light, so white-on-black
+ * washes out badly; dark-on-white keeps far more contrast. Type is also large
+ * enough to read at arm's length in a moving vehicle.
+ *
  * The Step 4 drive spike is a go/no-go gate measured on a real bus over 8
  * hours in summer heat — and a tester in a moving vehicle cannot read logcat.
  * Every number that decides pass/fail is on this screen.
@@ -37,24 +47,71 @@ import kotlin.math.roundToInt
  * be able to spot trouble without reading.
  */
 @Composable
-fun DebugScreen(modifier: Modifier = Modifier) {
+fun DebugScreen(
+    modifier: Modifier = Modifier,
+    recording: Boolean = false,
+    onToggleRecording: () -> Unit = {},
+    onOpenPermissions: () -> Unit = {},
+) {
     val m by DebugMetrics.state.collectAsStateWithLifecycle()
 
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(Color(0xFF0D0D0D))
+            .background(Bg)
             .verticalScroll(rememberScrollState())
             .padding(12.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        Text(
-            "safeSy · DRIVE TEST",
-            color = Color(0xFF4CAF50),
-            fontFamily = FontFamily.Monospace,
-            fontWeight = FontWeight.Bold,
-            fontSize = 16.sp,
-        )
+
+        // --- START / STOP -------------------------------------------------
+        // A drive test needs clear boundaries: without them, the trace mixes
+        // walking to the car, sitting still, and actual driving into one
+        // undifferentiated blob that cannot be analysed.
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(84.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(if (recording) Bad else Good)
+                .clickable { onToggleRecording() },
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                if (recording) "■  STOP  (${formatDuration(m.tripElapsedSec)})" else "▶  START DRIVE",
+                color = Color.White,
+                fontFamily = FontFamily.Monospace,
+                fontWeight = FontWeight.Bold,
+                fontSize = 26.sp,
+            )
+        }
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(8.dp))
+                .background(Color(0xFFEDEDED))
+                .clickable { onOpenPermissions() }
+                .padding(vertical = 12.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                "CHECK PERMISSIONS",
+                color = Ink,
+                fontFamily = FontFamily.Monospace,
+                fontWeight = FontWeight.Bold,
+                fontSize = 16.sp,
+            )
+        }
+
+        if (!recording) {
+            Text(
+                "Not recording. Press START when the vehicle begins moving.",
+                color = Dim,
+                fontFamily = FontFamily.Monospace,
+                fontSize = 14.sp,
+            )
+        }
 
         // --- The go/no-go numbers, first because they decide the spike ---
         Section("HEALTH") {
@@ -81,7 +138,11 @@ fun DebugScreen(modifier: Modifier = Modifier) {
             Metric("hdop", "%.1f".format(m.hdop), warn = m.hdop > 3f, bad = m.hdop > 5f)
             // Only GPS_PROVIDER fixes carry satellite time; network/fused fixes
             // return the untrusted system clock and must not set gnss_t_ms.
-            Metric("provider", m.gpsProvider, bad = !m.fixIsGps)
+            // A cold GNSS start needs 30-90 s of clear sky. Showing satellite
+            // counts turns "is it broken?" into visible progress.
+            Metric("satellites", "${m.satsUsed} used / ${m.satsVisible} seen",
+                warn = m.satsUsed in 1..3, bad = m.satsUsed == 0)
+            Metric("provider", m.gpsProvider, warn = !m.fixIsGps, bad = m.gpsProvider == "—")
         }
 
         Section("DETECTION") {
@@ -141,9 +202,9 @@ fun DebugScreen(modifier: Modifier = Modifier) {
                     Text(
                         "${e.kind.name.take(12).padEnd(13)} sev=${e.severity.toString().padStart(4)} " +
                             "peak=${"%.1f".format(e.peak)}",
-                        color = Color(0xFFBBBBBB),
+                        color = Dim,
                         fontFamily = FontFamily.Monospace,
-                        fontSize = 11.sp,
+                        fontSize = 14.sp,
                     )
                 }
             }
@@ -151,14 +212,22 @@ fun DebugScreen(modifier: Modifier = Modifier) {
     }
 }
 
+// High-contrast palette for direct sunlight.
+private val Bg = Color(0xFFFFFFFF)
+private val Ink = Color(0xFF000000)
+private val Dim = Color(0xFF5A5A5A)
+private val Good = Color(0xFF00701A)
+private val Warn = Color(0xFF8A5100)
+private val Bad = Color(0xFFC10015)
+
 @Composable
 private fun Section(title: String, content: @Composable () -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
         Text(
             title,
-            color = Color(0xFF666666),
+            color = Dim,
             fontFamily = FontFamily.Monospace,
-            fontSize = 11.sp,
+            fontSize = 13.sp,
             fontWeight = FontWeight.Bold,
         )
         content()
@@ -168,18 +237,18 @@ private fun Section(title: String, content: @Composable () -> Unit) {
 @Composable
 private fun Metric(label: String, value: String, warn: Boolean = false, bad: Boolean = false) {
     val color = when {
-        bad -> Color(0xFFE53935)
-        warn -> Color(0xFFFFB300)
-        else -> Color(0xFFE0E0E0)
+        bad -> Bad
+        warn -> Warn
+        else -> Ink
     }
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(label, color = Color(0xFF888888), fontFamily = FontFamily.Monospace, fontSize = 12.sp)
-        Text(value, color = color, fontFamily = FontFamily.Monospace, fontSize = 13.sp,
-            fontWeight = if (bad || warn) FontWeight.Bold else FontWeight.Normal)
+        Text(label, color = Dim, fontFamily = FontFamily.Monospace, fontSize = 15.sp)
+        Text(value, color = color, fontFamily = FontFamily.Monospace, fontSize = 17.sp,
+            fontWeight = if (bad || warn) FontWeight.Bold else FontWeight.Medium)
     }
 }
 

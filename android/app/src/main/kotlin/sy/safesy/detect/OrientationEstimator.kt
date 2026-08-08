@@ -43,6 +43,10 @@ class OrientationEstimator(private val config: DetectionConfig) {
     var suppressedUntilMs: Long = 0L
         private set
 
+    /** True between detecting a shift and the phone holding still again. */
+    private var pendingReanchor = false
+    private var stableSinceMs = 0L
+
     val isConverged: Boolean get() = initialized && referenceSet
 
     /**
@@ -107,6 +111,25 @@ class OrientationEstimator(private val config: DetectionConfig) {
         // Under hard vehicle acceleration the raw direction also deviates, so
         // this is gated on the measured magnitude being near 1g — i.e. the
         // vehicle is not the explanation.
+        // Re-anchor only once the phone has held a steady orientation for a
+        // while — that is what makes the new reference trustworthy.
+        val steady = abs(gMag - 1f) < 0.05f
+        if (pendingReanchor && s.tMs >= suppressedUntilMs) {
+            if (steady) {
+                if (stableSinceMs == 0L) stableSinceMs = s.tMs
+                if (s.tMs - stableSinceMs >= STABLE_REQUIRED_MS) {
+                    referenceX = gx; referenceY = gy; referenceZ = gz
+                    pendingReanchor = false
+                    stableSinceMs = 0L
+                }
+            } else {
+                stableSinceMs = 0L
+                // Still moving: hold suppression rather than emitting again.
+                suppressedUntilMs = s.tMs + config.mountReconvergeMs
+            }
+            return null
+        }
+
         val nearOneG = abs(gMag - 1f) < 0.15f
         val dot = (ax * referenceX + ay * referenceY + az * referenceZ).coerceIn(-1f, 1f)
         val deviationDeg = if (nearOneG) {
@@ -114,10 +137,17 @@ class OrientationEstimator(private val config: DetectionConfig) {
         } else 0f
 
         if (deviationDeg > config.mountShiftDeg && s.tMs > suppressedUntilMs) {
-            // The phone moved. Re-anchor to the new orientation and suppress IMU
-            // events until the estimate settles — better to lose a few seconds
-            // of detection than to emit a burst of phantom events.
-            referenceX = gx; referenceY = gy; referenceZ = gz
+            // The phone moved. Suppress IMU events until it settles.
+            //
+            // ⚠️ Do NOT re-anchor the reference here. A real drive trace showed
+            // 24 MOUNT_SHIFTED events in 3 minutes: re-anchoring to a MOVING
+            // orientation means the next sample already deviates from the
+            // reference just set, so the moment suppression expires it fires
+            // again — a loop, at exactly mountReconvergeMs intervals.
+            //
+            // Instead, defer re-anchoring to stabilisation (see below), so the
+            // reference is only ever learned from a phone that is holding still.
+            pendingReanchor = true
             suppressedUntilMs = s.tMs + config.mountReconvergeMs
             return DetectedEvent(
                 kind = DetectedEvent.Kind.MOUNT_SHIFTED,
@@ -166,6 +196,8 @@ class OrientationEstimator(private val config: DetectionConfig) {
         )
     }
 }
+
+private const val STABLE_REQUIRED_MS = 2_000L
 
 data class LinearAccel(
     val vertical: Float,
