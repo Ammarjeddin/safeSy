@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- PRIMARY LOCALE. Syria uses Western Arabic numerals (0-9) in official
+     transport contexts — confirm against Ministry documents before switching
+     to Eastern Arabic (٠-٩). Getting this wrong reads as immediately foreign. -->
+<resources>
+    <string name="app_name">سيف سوريا</string>
+    <string name="trip_start">بدء الرحلة</string>
+    <string name="trip_end">إنهاء الرحلة</string>
+    <string name="trip_active_title">رحلة جارية</string>
+    <string name="trip_active_body">يتم تسجيل بيانات السلامة</string>
+    <string name="pending_minutes">%1$d دقيقة غير مُرسَلة</string>
+    <string name="idle_privacy_note">لا يتم تسجيل أي بيانات عندما لا توجد رحلة جارية.</string>
+    <string name="sos">استغاثة</string>
+</resources>

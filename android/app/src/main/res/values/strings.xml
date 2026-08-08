@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Development/fallback locale. Arabic in values-ar/ is the primary. -->
+<resources>
+    <string name="app_name">safeSy</string>
+    <string name="trip_start">Start Trip</string>
+    <string name="trip_end">End Trip</string>
+    <string name="trip_active_title">Trip in progress</string>
+    <string name="trip_active_body">Safety data is being recorded</string>
+    <string name="pending_minutes">%1$d minutes not yet sent</string>
+    <string name="idle_privacy_note">Nothing is recorded when no trip is in progress.</string>
+    <string name="sos">SOS</string>
+</resources>
