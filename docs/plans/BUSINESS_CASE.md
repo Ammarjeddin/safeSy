@@ -286,6 +286,8 @@ Presenting these builds more credibility than hiding them. Every one has a mitig
 
 ## 14. The Ask
 
+**Framing note:** safeSy is volunteer-built and non-commercial. There is no company, no licence fee, and nothing being sold. That is a genuine strength in every one of these conversations — the ask is for access, permission, and data, not for a procurement decision. It also means the sustainability question is real and should be raised honestly: volunteer capacity is finite, and a pilot that succeeds will need a maintenance path.
+
 *Tailor per audience.*
 
 - **Ministry:** roster access, a named operational contact, one cooperative for a 4-week pilot, and a written data-use agreement.

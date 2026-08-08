@@ -24,6 +24,14 @@ Buses run those roads now. Every day, with passengers.
 
 It is deliberately designed to become **less** necessary as real infrastructure arrives, and to keep working better as it does. Every new tower shortens a dead zone. Every repaired road shows up in the data. When Syria has proper highway telemetry, safeSy will have spent years mapping exactly where to put it.
 
+> ### This is volunteer work
+>
+> **safeSy is built by volunteers, for free, and it is open to anyone who wants to help.**
+>
+> There is no company behind it and nothing to sell. The goal is simply to keep people alive on Syrian roads and to reduce, by whatever small amount is possible, the suffering that Syrians have already endured too much of.
+>
+> If you can write Kotlin, run a backend, test on a real bus route, translate an interface into proper Arabic, or tell us what drivers actually need — **you are welcome here.** See [Contributing](#contributing).
+
 ## The problem, in one number
 
 <div align="center">
@@ -154,6 +162,37 @@ These are enforced as invariants, not aspirations — see [`CLAUDE.md`](CLAUDE.m
 - Phone-based IMU detection is **less accurate than fixed hardware**. Cornering and rollover metrics are advisory in Phase 1.
 - It is **not an enforcement system**, and the score is not engineered to survive being used as one.
 
+## Contributing
+
+**This is volunteer work and help is genuinely wanted.** You do not need to be a telematics expert — most of what's needed isn't specialist.
+
+**Most useful right now:**
+
+| | |
+|---|---|
+| 🇸🇾 **Arabic & RTL** | Native review of the interface. Machine translation is not good enough for something a driver reads at 90 km/h. Also: does Syria use Western (0-9) or Eastern (٠-٩) numerals in transport contexts? |
+| 🚌 **Ground truth from Syria** | What do drivers actually need? What would make them uninstall it? Which routes are worst? Do buses return to a depot at night? |
+| 📱 **Android / Kotlin** | Foreground services, Room, sensor fusion. The detection engine (Step 1) is the next big piece. |
+| 📡 **Coverage data** | Anyone driving Syrian highways with a logging app produces data that does not currently exist anywhere. |
+| 🖥️ **Backend** | Ingest, PostGIS/TimescaleDB, scoring service. |
+| 🔍 **Review** | Tell us where the design is wrong. Several numbers here were wrong by 2×–1000× until someone checked the arithmetic — that habit is why they got caught. |
+
+**Before you start:** read [`CLAUDE.md`](CLAUDE.md) for the non-negotiable invariants. They look arbitrary without context and each one is there because getting it wrong loses data or breaks a privacy guarantee.
+
+Open an issue or a PR. Questions and corrections are as welcome as code.
+
+## Ethics
+
+This system tracks the movements of named individuals in a country where that has historically been dangerous. That is taken seriously, not as an afterthought:
+
+- **Nothing is recorded outside an active trip.** Not a policy — the app requests no background location permission at all.
+- **Opt-out deletes history**, not just future collection.
+- **Location detail ages out.** Scores persist; coordinates do not.
+- **Live individual tracking is access-tiered** separately from aggregate views, with audit logs someone is responsible for reading.
+- **It is not an enforcement instrument**, and the score is not engineered to survive being used as one.
+
+Full commitments: [`docs/architecture/SPEC.md`](docs/architecture/SPEC.md) §S6.4.
+
 ## License
 
-Not yet chosen. Open an issue if you have a view.
+Not yet chosen — likely a permissive open-source license consistent with the volunteer, non-commercial intent. Open an issue if you have a view.
