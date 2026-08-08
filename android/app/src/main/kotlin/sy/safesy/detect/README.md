@@ -114,7 +114,21 @@ The detector currently assumes a **fixed mount** — orientation is learned once
 
 **Why this matters:** if the phone re-orients continuously, "learn the mount once, flag changes as faults" is the wrong model. IMU-derived events (cornering, rollover) may be unusable in a pocket, and the honest response may be to **fall back to GPS-only metrics for those placements** — speed, variance, duration, and braking from the speed derivative are all mount-independent (§S3.3).
 
-**This must be measured, not guessed.** Every debug session now records its placement, so traces can be compared across them. The open questions:
+**Placement is now INFERRED, not asked.** `PlacementClassifier` decides from behaviour over the first 60 s and holds the verdict for the trip:
+
+| Signal | Separates |
+|---|---|
+| Orientation variance | A cradle holds steady; a pocket swings with the torso |
+| Vibration coupling | A hard mount couples engine/road vibration; cloth damps it |
+| Proximity covered | A pocket keeps the sensor covered |
+
+Asking a bus driver to select a mode before every trip is a step that will not happen — and a wrong answer is worse than no answer. The verdict is **held for the trip** because a classifier that flips mid-journey would move thresholds under the detector's feet.
+
+`imuEventsTrustworthy()` gates IMU-derived events: `false` for `CARRIED` and while `UNKNOWN`. GPS-derived metrics stay valid regardless, which is why §S3.3 rates them High confidence.
+
+⚠️ **The classifier's thresholds are placeholders** — never calibrated against labelled sessions. The session page's manual placement selector is retained precisely as **ground truth to validate the classifier against**.
+
+**This must be measured, not guessed.** The open questions:
 
 1. Does a pocket produce so many `MOUNT_SHIFTED` events that detection is suppressed most of the time?
 2. Can harsh braking still be detected from GPS alone when IMU events are unusable?

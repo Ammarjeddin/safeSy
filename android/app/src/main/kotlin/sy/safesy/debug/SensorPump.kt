@@ -46,6 +46,8 @@ class SensorPump(
     private val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
     private val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
     private val detector = DrivingDetector(VehicleProfile.BUS)
+    // Infers placement from behaviour so the driver never has to declare it.
+    private val placement = sy.safesy.detect.PlacementClassifier()
 
     private val accel = FloatArray(3)
     private val gyro = FloatArray(3)
@@ -91,7 +93,7 @@ class SensorPump(
         traceFile = File(dir, if (sessionDir != null) "trace.csv" else "drive-$stamp.csv").apply {
             appendText("elapsed_s,lat,lon,speed_kmh,hdop,provider,imu_hz,gnss_hz," +
                 "accel_total,accel_vert,accel_horiz,gps_accel,calibrated,mount_suppressed," +
-                "sats_seen,sats_used,app_fg,bg_sec,near_ear,ear_sec," +
+                "sats_seen,sats_used,app_fg,bg_sec,near_ear,ear_sec,detected_placement,imu_trusted," +
                 "rat,rssi,data_ok,batt_pct,batt_temp_c,charging,tx_bytes,rx_bytes\n")
         }
         eventFile = File(dir, if (sessionDir != null) "events.csv" else "events-$stamp.csv").apply {
@@ -176,7 +178,9 @@ class SensorPump(
         if (!haveAccel || event.sensor.type != Sensor.TYPE_ACCELEROMETER) return
 
         val tMs = event.timestamp / 1_000_000  // sensor timestamps are ns since boot
-        detector.onImu(ImuSample(tMs, accel[0], accel[1], accel[2], gyro[0], gyro[1], gyro[2]))
+        val sample = ImuSample(tMs, accel[0], accel[1], accel[2], gyro[0], gyro[1], gyro[2])
+        detector.onImu(sample)
+        placement.onImu(sample)
         imuCount++
         drainAndPublish(tMs)
     }
@@ -261,7 +265,7 @@ class SensorPump(
                 "$imuHz,$gnssHz,${detector.lastLinear?.totalMag ?: 0f},${detector.lastLinear?.vertical ?: 0f}," +
                 "${detector.lastLinear?.horizontalMag ?: 0f},${detector.lastGpsAccel}," +
                 "${detector.isCalibrated},${detector.isMountSuppressed(now)}," +
-                "${snap.satsVisible},${snap.satsUsed},${snap.appForeground},${snap.backgroundSec},${snap.nearEar},${snap.nearEarSec}," +
+                "${snap.satsVisible},${snap.satsUsed},${snap.appForeground},${snap.backgroundSec},${snap.nearEar},${snap.nearEarSec},${placement.placement},${placement.imuEventsTrustworthy()}," +
                 "$rat,$rssi,$dataOk,$pct,$tempC,$charging,$tx,$rx\n"
             )
         }
@@ -280,6 +284,9 @@ class SensorPump(
                 verticalAccel = detector.lastLinear?.vertical ?: 0f,
                 horizontalAccel = detector.lastLinear?.horizontalMag ?: 0f,
                 gpsAccelMps2 = detector.lastGpsAccel,
+                detectedPlacement = placement.placement.name,
+                placementProgress = placement.progress(now),
+                imuTrusted = placement.imuEventsTrustworthy(),
                 bytesUploaded = tx, bytesDownloaded = rx,
                 rat = rat, rssiDbm = rssi, dataOk = dataOk,
                 coverageGapSeconds = currentGapSec,

@@ -163,6 +163,17 @@ fun DebugScreen(
                 Metric("calibrated", "yes")
             }
             if (m.mountSuppressed) Metric("mount", "SHIFTED — suppressed", bad = true)
+            // Inferred, not declared — the manual selector on the session page
+            // is kept only as ground truth to validate this against.
+            Metric(
+                "placement",
+                if (m.detectedPlacement == "UNKNOWN")
+                    "detecting ${(m.placementProgress * 100).toInt()}%"
+                else m.detectedPlacement,
+                warn = m.detectedPlacement == "UNKNOWN",
+            )
+            Metric("IMU events", if (m.imuTrusted) "trusted" else "NOT trusted",
+                warn = !m.imuTrusted)
             Metric("accel |a|", "${"%.2f".format(m.linearAccelMag)} m/s²")
             Metric("  vertical", "%.2f".format(m.verticalAccel))
             Metric("  horizontal", "%.2f".format(m.horizontalAccel))

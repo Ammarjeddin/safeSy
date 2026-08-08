@@ -53,6 +53,9 @@ class PhoneUsageTracker(
     private var totalNearEarMs = 0L
     private var nearEarEpisodes = 0
 
+    /** Lets the placement classifier see proximity without owning the sensor. */
+    var onProximityChanged: ((Boolean) -> Unit)? = null
+
     fun start() {
         app.registerActivityLifecycleCallbacks(this)
         sensorManager.getDefaultSensor(Sensor.TYPE_PROXIMITY)?.let {
@@ -116,6 +119,7 @@ class PhoneUsageTracker(
         val covered = event.values[0] < (event.sensor.maximumRange / 2f)
         if (covered == nearEar) return
 
+        onProximityChanged?.invoke(covered)
         if (covered) {
             nearEar = true
             nearEarSinceMs = SystemClock.elapsedRealtime()
