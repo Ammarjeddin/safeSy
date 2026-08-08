@@ -20,6 +20,8 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 /**
@@ -37,6 +39,15 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 @Composable
 fun GnssScreen(modifier: Modifier = Modifier) {
     val m by DebugMetrics.state.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+
+    // Monitor reception whenever this page is open — checking the antenna must
+    // not require starting a fake trip.
+    DisposableEffect(Unit) {
+        val monitor = GnssMonitor(context)
+        monitor.start()
+        onDispose { monitor.stop() }
+    }
 
     Column(
         modifier = modifier
@@ -63,6 +74,18 @@ fun GnssScreen(modifier: Modifier = Modifier) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Big("SEEN", "${m.satsVisible}")
             Big("USED", "${m.satsUsed}", if (m.satsUsed >= 4) Color(0xFF00701A) else Color(0xFFC10015))
+        }
+
+        if (m.satCn0.isNotEmpty()) {
+            val best = m.satCn0.maxOrNull() ?: 0f
+            val strong = m.satCn0.count { it >= 35f }
+            Text(
+                "searching ${m.gnssSearchingSec}s · best ${"%.0f".format(best)} dB-Hz · " +
+                    "$strong above 35",
+                color = Color(0xFF5A5A5A),
+                fontFamily = FontFamily.Monospace,
+                fontSize = 14.sp,
+            )
         }
 
         Text("SIGNAL STRENGTH (C/N0 dB-Hz)", color = Color(0xFF5A5A5A),
