@@ -38,6 +38,8 @@ object DebugMetrics {
         val satsUsed: Int = 0,
         /** Per-satellite carrier-to-noise density, dB-Hz. Empty = nothing received. */
         val satCn0: List<Float> = emptyList(),
+        /** Seconds since the first satellite was seen — how long it has been trying. */
+        val gnssSearchingSec: Long = 0,
 
         // --- Detection ---
         val calibrated: Boolean = false,
