@@ -14,7 +14,7 @@
 
 **The sharper version, for a Ministry audience:**
 
-> **Syria's road safety strategy has a 10%-by-2030 fatality target, a 15-minute post-crash response target, and no funding or data to pursue either. Syria records 549 road deaths a year; WHO estimates 6,383. safeSy is the measurement layer those existing national targets require — deployable now, on phones that already exist.**
+> **Syria is rebuilding from war. Reconstruction of road and telecom infrastructure is an $82bn, multi-year programme — but buses run those roads today. WHO estimates 6,383 road deaths a year. Syria's own strategy sets a 10%-by-2030 fatality target and a 15-minute post-crash response target, with no funding or data behind either. safeSy is the interim layer that makes those targets measurable — deployable now, on phones that already exist, and designed to keep improving as real infrastructure arrives.**
 
 ## 2. The Problem
 
@@ -24,7 +24,7 @@ Three failures compound on Syrian intercity roads:
 |---|---|
 | **Roads are dangerous** | The Damascus–Deir ez-Zor desert route is single-lane each way, ~6 m wide, potholed, unlit, unsigned. A July 2026 crash between al-Sukhnah and Palmyra killed 35 and injured 30 — nearest hospital 50 km away. |
 | **Nobody knows where the buses are** | A breakdown or crash in the desert corridor is invisible until someone drives past. Field reporting: a *"near-total lack of cellular networks isolates travellers as soon as they leave the two cities."* |
-| **There is no data** | Syria **reports 549 road deaths a year. WHO estimates 6,383** — an 11.6× gap (§10). No enforced speed limits (WHO rates the legislation "weak/none"), no measured coverage map, no per-driver safety record, no evidence base for where to spend repair budget. |
+| **There is no data** | **WHO estimates 6,383 road deaths a year — 29.9 per 100,000, ~2× the world average** (§11). No enforced speed limits (WHO rates the legislation "weak/none"), no measured coverage map, no per-driver safety record, no evidence base for where to spend repair budget. |
 
 **The gap this fills:** rebuilding roads and towers takes years and billions. **Knowing what is happening on the roads can start this quarter, for the cost of software.**
 
@@ -191,7 +191,6 @@ For scale: against road trauma costing **$642M–$1,070M/year** (§11.3), a **1%
 | Indicator | Value |
 |---|---|
 | Population | 21,324,367 |
-| **Reported** road fatalities (2021) | **549** |
 | **WHO-estimated** road fatalities (2021) | **6,383** (95% CI 5,269–7,497) |
 | WHO-estimated rate | **29.9 per 100,000** |
 | Registered vehicles | 2,596,542 |
@@ -199,16 +198,15 @@ For scale: against road trauma costing **$642M–$1,070M/year** (§11.3), a **1%
 | National road safety strategy | **Exists — NOT FUNDED** |
 | Fatality reduction target | 10% by 2030 |
 
-### 10.1 The single most important slide in this deck
+### 11.1 The framing that matters
 
-> **Syria reports 549 road deaths. WHO estimates 6,383.**
-> **That is an 11.6× gap — roughly 5,800 deaths a year that never enter any official record.**
+> **WHO estimates 6,383 road deaths a year in Syria — 29.9 per 100,000, roughly 7× the EU rate.**
 
-This is not a safety problem in the first instance. **It is a measurement problem.** You cannot manage, budget for, or reduce what you cannot count — and a road safety strategy that is *unfunded* stays unfunded partly because the official numbers make the problem look one-eleventh its actual size.
+**safeSy is, structurally, a measurement instrument.** Every trip logged is a data point that currently does not exist. That reframes the pitch: this is not "an app that scores drivers," it is **the national road-safety data system Syria's own strategy requires and does not have.**
 
-**safeSy is, structurally, a measurement instrument.** Every trip logged is a data point that currently does not exist. That reframes the pitch entirely: this is not "an app that scores drivers," it is **the national road-safety data system Syria's own strategy requires and does not have.**
+⚠️ **Presentation note.** The WHO country profile also records 549 *reported* fatalities against its 6,383 estimate. That gap is real and is in the source, but **do not lead with it** — it invites a debate about reporting methodology instead of a conversation about road deaths, and it reads as criticism of the counterpart in the room. Use the WHO estimate alone. If the discrepancy comes up, treat it as a measurement-capability gap that safeSy exists to close.
 
-### 10.2 Severity in context
+### 11.2 Severity in context
 
 | | Deaths per 100,000 |
 |---|---|
@@ -219,11 +217,11 @@ This is not a safety problem in the first instance. **It is a measurement proble
 
 **~7× the EU rate. ~2× the world average.**
 
-### 10.3 Economic cost
+### 11.3 Economic cost
 
 WHO and the World Bank estimate road trauma costs developing economies **3–5% of GDP annually**. Against a deliberately conservative $9bn GDP estimate, that is **$270–450M per year**. Syria's GDP is disputed post-conflict, so treat this as an order-of-magnitude figure — but note that even the *lowest* plausible number dwarfs the cost of a national telematics program.
 
-### 10.4 What the WHO profile confirms about our design
+### 11.4 What the WHO profile confirms about our design
 
 Four items in the profile independently validate design decisions made before we found it:
 

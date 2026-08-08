@@ -14,33 +14,32 @@
 
 ---
 
-## The problem
+## Why we're building this
 
-<table>
-<tr>
-<td width="50%" align="center">
+Syria is coming out of more than a decade of war. The roads are damaged, unlit, and largely unsigned. Cellular towers across the eastern corridors are gone or unpowered. Emergency dispatch has no coordinating agency. Rebuilding all of it is a **$82bn, multi-year infrastructure programme** — and it is genuinely underway, but it will take years to reach the roads people travel on today.
 
-### 549
-road deaths Syria **reports** per year
+Buses run those roads now. Every day, with passengers.
 
-</td>
-<td width="50%" align="center">
+**safeSy is what you can do in the meantime.** It uses the smartphone the driver already carries to provide the two things missing on Syrian highways: *someone knows where the bus is*, and *someone knows when it crashes*. No towers, no hardware, no roadworks — deployable this quarter, on the network that exists today.
+
+It is deliberately designed to become **less** necessary as real infrastructure arrives, and to keep working better as it does. Every new tower shortens a dead zone. Every repaired road shows up in the data. When Syria has proper highway telemetry, safeSy will have spent years mapping exactly where to put it.
+
+## The problem, in one number
+
+<div align="center">
 
 ### 6,383
-road deaths WHO **estimates**
+**estimated road deaths per year** · **29.9 per 100,000 people**
 
-</td>
-</tr>
-</table>
+*~7× the EU rate · ~2× the world average*
 
-**An 11.6× gap — roughly 5,800 deaths a year that never enter any official record.**
+</div>
+
 *(Source: [WHO Global Status Report on Road Safety 2023](https://cdn.who.int/media/docs/default-source/country-profiles/road-safety/road-safety-2023-syr.pdf))*
 
-This is a measurement problem before it is a safety problem. You cannot manage, budget for, or reduce what you cannot count — and Syria's own road safety strategy already sets a **10%-by-2030 fatality target** and a **15-minute post-crash response target**, with no funding and no data behind either.
+Syria's own road safety strategy already sets a **10%-by-2030 fatality target** and a **15-minute post-crash response target**. Both exist on paper. Neither has funding or data behind it — WHO records the strategy as *"Not funded"*, with **no lead agency coordinating pre-hospital emergency care**.
 
-At 29.9 deaths per 100,000, Syria is **~7× the EU rate** and **~2× the world average**.
-
-safeSy is the measurement layer those existing national targets require — deployable now, with no hardware and no new infrastructure.
+safeSy is the measurement and response layer those existing national targets require.
 
 ## What it does
 
