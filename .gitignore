@@ -17,3 +17,6 @@ gen/
 *.jks
 *.keystore
 secrets.properties
+android/local.properties
+android/.gradle/
+android/app/build/

@@ -1,29 +1,27 @@
-import com.google.protobuf.gradle.id
+import javax.inject.Inject
+import org.gradle.process.ExecOperations
 
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
-    alias(libs.plugins.protobuf)
 }
 
 android {
     namespace = "sy.safesy"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "sy.safesy"
         // API 26 (Android 8.0) — the floor for this fleet. Foreground services
         // and background limits behave very differently below this.
         minSdk = 26
-        targetSdk = 36
+        targetSdk = 37
         versionCode = 1
         versionName = "0.1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         // Arabic is the primary locale; English kept for development.
-        resourceConfigurations += setOf("ar", "en")
     }
 
     buildTypes {
@@ -42,25 +40,54 @@ android {
 
     buildFeatures { compose = true }
 
-    sourceSets["main"].java.srcDirs("src/main/kotlin")
-    sourceSets["test"].java.srcDirs("src/test/kotlin")
-    // The proto schema lives at the repo root — it is shared with the server
-    // and the future embedded client, so it must NOT be duplicated here.
-    sourceSets["main"].proto { srcDir("../../proto") }
+    // Arabic is the primary locale; English kept for development.
+    androidResources { localeFilters += setOf("ar", "en") }
+
+    sourceSets.getByName("main") { java.directories.add("src/main/kotlin") }
+    sourceSets.getByName("test") { java.directories.add("src/test/kotlin") }
 
     testOptions { unitTests { isIncludeAndroidResources = true } }
 }
 
-protobuf {
-    protoc { artifact = libs.protobuf.protoc.get().toString() }
-    generateProtoTasks {
-        all().forEach { task ->
-            task.builtins {
-                // javalite: ~10x smaller runtime than full protobuf. Matters on
-                // 2-3GB devices, and we only need serialize/deserialize.
-                id("java") { option("lite") }
-            }
+// Protobuf codegen.
+//
+// Deliberately invoking protoc directly rather than using protobuf-gradle-plugin:
+// that plugin does not yet support AGP 9 (it casts to the removed BaseExtension).
+// Calling protoc ourselves is a few lines, has no plugin dependency to wait on,
+// and keeps the generated sources visible.
+//
+// javalite: ~10x smaller runtime than full protobuf — matters on 2-3GB devices,
+// and we only need serialize/deserialize.
+abstract class GenerateProtoTask : DefaultTask() {
+    @get:InputDirectory abstract val protoDir: DirectoryProperty
+    @get:OutputDirectory abstract val outDir: DirectoryProperty
+
+    // Gradle 9 removed project.exec at execution time; inject ExecOperations.
+    @get:Inject abstract val execOps: ExecOperations
+
+    @TaskAction
+    fun generate() {
+        val out = outDir.get().asFile.also { it.mkdirs() }
+        val src = protoDir.get().asFile
+        execOps.exec {
+            commandLine(
+                "protoc",
+                "--proto_path=" + src.absolutePath,
+                "--java_out=lite:" + out.absolutePath,
+                src.absolutePath + "/safesy/v1/telemetry.proto",
+            )
         }
+    }
+}
+
+val generateProto by tasks.registering(GenerateProtoTask::class) {
+    protoDir.set(file("../../proto"))
+    outDir.set(layout.buildDirectory.dir("generated/source/proto"))
+}
+
+androidComponents {
+    onVariants { variant ->
+        variant.sources.java?.addGeneratedSourceDirectory(generateProto) { it.outDir }
     }
 }
 
