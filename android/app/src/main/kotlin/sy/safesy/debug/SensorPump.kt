@@ -91,7 +91,7 @@ class SensorPump(
         traceFile = File(dir, if (sessionDir != null) "trace.csv" else "drive-$stamp.csv").apply {
             appendText("elapsed_s,lat,lon,speed_kmh,hdop,provider,imu_hz,gnss_hz," +
                 "accel_total,accel_vert,accel_horiz,gps_accel,calibrated,mount_suppressed," +
-                "sats_seen,sats_used," +
+                "sats_seen,sats_used,app_fg,bg_sec,near_ear,ear_sec," +
                 "rat,rssi,data_ok,batt_pct,batt_temp_c,charging,tx_bytes,rx_bytes\n")
         }
         eventFile = File(dir, if (sessionDir != null) "events.csv" else "events-$stamp.csv").apply {
@@ -261,7 +261,7 @@ class SensorPump(
                 "$imuHz,$gnssHz,${detector.lastLinear?.totalMag ?: 0f},${detector.lastLinear?.vertical ?: 0f}," +
                 "${detector.lastLinear?.horizontalMag ?: 0f},${detector.lastGpsAccel}," +
                 "${detector.isCalibrated},${detector.isMountSuppressed(now)}," +
-                "${snap.satsVisible},${snap.satsUsed}," +
+                "${snap.satsVisible},${snap.satsUsed},${snap.appForeground},${snap.backgroundSec},${snap.nearEar},${snap.nearEarSec}," +
                 "$rat,$rssi,$dataOk,$pct,$tempC,$charging,$tx,$rx\n"
             )
         }

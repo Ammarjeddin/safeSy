@@ -74,6 +74,16 @@ object DebugMetrics {
         val charging: Boolean = false,
         val tripElapsedSec: Long = 0,
         val serviceRestarts: Int = 0,
+
+        // --- Phone usage. Recorded to make the safety data INTERPRETABLE
+        // (handling is the largest source of phantom IMU events), never as a
+        // scoring input — see PhoneUsageTracker's rationale.
+        val appForeground: Boolean = true,
+        val backgroundSec: Long = 0,
+        val backgroundEpisodes: Int = 0,
+        val nearEar: Boolean = false,
+        val nearEarSec: Long = 0,
+        val nearEarEpisodes: Int = 0,
     ) {
         /**
          * Projected monthly data at the current rate, against 208 driving-hours

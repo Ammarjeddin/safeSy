@@ -20,8 +20,6 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 /**
@@ -39,15 +37,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 @Composable
 fun GnssScreen(modifier: Modifier = Modifier) {
     val m by DebugMetrics.state.collectAsStateWithLifecycle()
-    val context = LocalContext.current
 
-    // Monitor reception whenever this page is open — checking the antenna must
-    // not require starting a fake trip.
-    DisposableEffect(Unit) {
-        val monitor = GnssMonitor(context)
-        monitor.start()
-        onDispose { monitor.stop() }
-    }
+    // The monitor is owned by the Activity for the whole app session, not by
+    // this page — a receiver that powers down when you navigate away has to
+    // cold-start again, costing 30-90 s every time.
 
     Column(
         modifier = modifier

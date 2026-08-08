@@ -126,6 +126,17 @@ fun DebugScreen(
                 warn = m.serviceRestarts > 0, bad = m.serviceRestarts > 2)
         }
 
+        // Handling is the largest source of phantom IMU events, so it has to
+        // be visible and separable from real driving.
+        Section("PHONE USE") {
+            Metric("app", if (m.appForeground) "foreground" else "BACKGROUND",
+                warn = !m.appForeground)
+            Metric("time away", "${m.backgroundSec}s (${m.backgroundEpisodes}x)",
+                warn = m.backgroundSec > 30)
+            Metric("held to ear", "${m.nearEarSec}s (${m.nearEarEpisodes}x)",
+                warn = m.nearEar, bad = m.nearEarSec > 60)
+        }
+
         Section("SENSORS") {
             Metric("IMU", "${"%.1f".format(m.imuHz)} Hz", warn = m.imuHz < 40f, bad = m.imuHz < 25f)
             Metric("GNSS", "${"%.2f".format(m.gnssHz)} Hz", warn = m.gnssHz < 0.8f, bad = m.gnssHz < 0.4f)

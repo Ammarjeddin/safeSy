@@ -40,6 +40,9 @@ class MainActivity : ComponentActivity() {
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
         val store = SessionStore(this)
+        // Start the receiver as soon as the app is open, so a fix is ready
+        // before the driver presses START rather than 30-90 s after.
+        (application as? sy.safesy.SafeSyApp)?.gnss?.start()
 
         setContent {
             MaterialTheme {

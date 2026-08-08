@@ -122,6 +122,17 @@ The detector currently assumes a **fixed mount** — orientation is learned once
 
 Until there is pocket data, **treat cornering and rollover as cradle-only capabilities.**
 
+## Phone handling during driving
+
+Drivers take calls and send messages while driving. Whatever the rules say, it happens — and a system that pretends otherwise produces data that does not describe reality.
+
+Debug sessions therefore record **app-background time** and **proximity-sensor "held to ear"** episodes, for two reasons:
+
+1. **Data quality.** A gap in the trace could be a coverage dead zone, a killed process, or the driver answering a call. Indistinguishable after the fact unless recorded.
+2. **Detection validity.** A phone lifted to an ear rotates ~90° and accelerates hard. Without knowing that happened, the detector sees violent cornering. **Handling is the single largest source of phantom IMU events**, and it must be separable from real driving.
+
+⚠️ **This is deliberately not phone-handling detection for scoring.** DESIGN.md §3.3 rejects that: it converts a safety companion into a surveillance tool and undermines the voluntary-adoption story the project rests on. The signal exists to make the safety data *interpretable*, and belongs in debug builds and aggregate research — **never in a driver's score.**
+
 ## Related
 
 Runs only while [`policy/`](../policy/README.md) says `ACTIVE` · Events are packed by [`outbox/`](../outbox/README.md) · Scoring is **not** here — it's in [`server/`](../../../../../../../../server/README.md)
