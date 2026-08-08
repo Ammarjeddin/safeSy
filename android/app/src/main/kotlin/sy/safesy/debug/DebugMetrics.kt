@@ -84,6 +84,11 @@ object DebugMetrics {
         val nearEar: Boolean = false,
         val nearEarSec: Long = 0,
         val nearEarEpisodes: Int = 0,
+
+        // --- Placement, inferred from behaviour rather than declared ---
+        val detectedPlacement: String = "UNKNOWN",
+        val placementProgress: Float = 0f,
+        val imuTrusted: Boolean = false,
     ) {
         /**
          * Projected monthly data at the current rate, against 208 driving-hours
