@@ -106,19 +106,30 @@ Three shared artifacts bind the clients together, replacing what would otherwise
 | `spec/` | Sealing, seq allocation, and time rules — prose, not code |
 | `conformance/` | Golden fixtures: byte-exact encoding · toleranced detection · process-death scenarios |
 
-## Repo layout
+## Sections
+
+The repo is organised into **sections** — each a directory with its own README, its own invariants, and its own contribution guide. **You can work on one section without understanding the others.** Pick the one that matches what you want to do.
+
+| Section | What it is | Needs | Status |
+|---|---|---|---|
+| [**Detection**](android/app/src/main/kotlin/sy/safesy/detect/) | Crash & driving-behaviour detection from 50 Hz IMU + GPS. Pure computation — no Android APIs. | Kotlin, signal processing | Core done |
+| [**Policy**](android/app/src/main/kotlin/sy/safesy/policy/) | Trip lifecycle and the rules for when the app may collect anything. Privacy guarantees live here. | Kotlin | Partial |
+| [**Outbox**](android/app/src/main/kotlin/sy/safesy/outbox/) | Durable storage, batch sealing, and upload across a network that fails for hours. | Kotlin, Room, WorkManager | Stub |
+| [**App UI**](android/app/src/main/kotlin/sy/safesy/ui/) | Drive Mode, trip screens, SOS, onboarding. **Arabic-first.** | Compose, design, **native Arabic** | Placeholder |
+| [**Server & Portal**](server/) | Ingest, storage, scoring, Ministry portal, enrolment. No Android needed. | Backend, PostGIS | Not started |
+| [**Wire Protocol**](proto/) | The contract shared by every client. Additive-only, forever. | protobuf | v1 done |
+| [**Spec**](spec/) | Sealing, `seq`, and time rules as prose. | Writing | Not started |
+| [**Conformance**](conformance/) | Golden fixtures keeping two implementations identical. | Any language | Not started |
 
 ```
-proto/          safesy-proto — THE contract, shared by Android, server, future embedded
-spec/           Written spec: sealing, seq allocation, time handling
-conformance/    Golden fixtures (3 classes)
-android/        Kotlin app — minSdk 26, compileSdk 36
-server/         Ingest, storage, scoring, portal
+proto/ spec/ conformance/     the shared contract
+android/app/src/main/kotlin/sy/safesy/
+├── detect/  policy/  outbox/  ui/
+server/                        ingest, scoring, portal
 docs/
 ├── architecture/   SPEC.md (what) · DESIGN.md (why, and what was rejected)
 ├── plans/          BUSINESS_CASE.md
-├── research/       Coverage, BOM, market
-└── reviews/        Adversarial design reviews
+└── research/       Coverage, BOM, market
 ```
 
 ## Status

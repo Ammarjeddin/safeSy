@@ -1,4 +1,4 @@
-package sy.safesy.trip
+package sy.safesy.policy
 
 /**
  * Trip lifecycle. See SPEC.md §S2.
