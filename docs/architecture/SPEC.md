@@ -198,6 +198,24 @@ Must handle: **gravity separation** (complementary/Madgwick filter — the phone
 | Harsh cornering | Medium-low | needs stable vehicle-frame orientation |
 | Rollover proxy | Low | alerting hint only, never a scoring input |
 
+### S3.5 Phone-handling — collected under consent, not scored
+
+**Decision (2026-08-08):** collected and transmitted in production, under consent disclosed at Ministry enrolment (§S6.1.8b).
+
+Drivers take calls and send messages while driving. Whatever the rules say, it happens, and a dataset that pretends otherwise does not describe reality.
+
+| | |
+|---|---|
+| Collect + transmit | ✅ with disclosed, versioned consent |
+| Show the driver their own record | ✅ symmetry is the trust argument (§S6.3) |
+| **Scoring input** | ❌ **no** |
+
+**Why it is collected:** handling is the largest source of phantom IMU events. A phone lifted to an ear rotates ~90° and accelerates hard, which reads as violent cornering. Without this signal, those events are indistinguishable from real driving — and a trace gap is indistinguishable from a coverage dead zone or a killed process.
+
+**Why it is not scored:** the measurement cannot support the conclusion. Proximity + app-background tells you the *phone* was handled — not *who* handled it, nor whether the vehicle was moving. Scoring on a misattributing signal creates disputes with no resolution, which is the same failure mode §S5.3 identifies for route-confounded scoring. It is also the feature most likely to get the app uninstalled, against a voluntary-adoption assumption the whole plan rests on.
+
+Aggregate research use (does handling explain phantom cornering? how often does it coincide with events?) is in scope and valuable.
+
 ### S3.4 Radio/coverage channel — independent by design
 
 Cannot be inferred from telemetry: a gap in *arrival* could be no coverage, a killed process, a dead battery, or a trip ending. And "covered but 2G-only / marginal" leaves no trace in a stream that only records what got through.
@@ -303,6 +321,7 @@ Signed config (thresholds, `VehicleProfile`) piggybacked on the ingest response.
 6. **Attestation optional.** Grey-market Tecno/Infinix on Android 8–9 often lack it; requiring it fails enrolment on the target fleet.
 7. **Possession of the phone IS the credential.** Acceptable (fraud out of scope), but never misrepresent it as stronger.
 8. **National IDs stored as salted hashes** — needed only as a match key.
+8b. **Consent record.** Enrolment captures which data classes the driver agreed to, with a timestamp and the consent-text version they saw. Phone-handling data (§S3.5) is collected under this consent, so the record must be **auditable** — "the driver signed something" is not a defence if nobody can produce what they signed. Store: `driver_id`, `consented_at`, `consent_version`, and the granted classes.
 9. Needs: roster re-import, "no longer in roster" state, lost-phone revocation, replacement re-enrolment.
 
 **Stale tokens must never block ingest.** Buses reconnect after hours holding expired tokens; accept on device-credential signature and issue a fresh token in the response.
