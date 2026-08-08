@@ -636,7 +636,25 @@ You listed speed, maneuvers, acceleration, braking. Those are the right core. Ad
 4. **Cornering speed vs. curve radius.** Derive radius from the heading-rate/speed relationship. Catches the specific failure mode that rolls a top-heavy bus. Moderate effort, high relevance.
 5. **Rollover-risk proxy** — sustained lateral g combined with roll rate. Buses roll; cars usually don't. Worth having even if it only ever fires a handful of times.
 
-Two I'd deliberately *skip*: tailgating (needs a forward camera or radar — no) and phone-handling detection (technically easy, but it turns the app from a safety companion into a surveillance tool, which directly undermines the voluntary-adoption story you're relying on).
+One I'd deliberately *skip*: tailgating (needs a forward camera or radar — no).
+
+**Phone-handling — revised 2026-08-08.** An earlier draft rejected this outright. The project owner has decided it **is** collected and transmitted, under disclosed consent given at Ministry enrolment. That is a legitimate basis and the reasoning is sound: drivers do take calls while driving, and a dataset that pretends otherwise does not describe reality.
+
+The revision splits one decision into three, because they have different risk profiles:
+
+| | Decision |
+|---|---|
+| **Collect + transmit** | ✅ Yes, with consent disclosed at enrolment |
+| **Show the driver their own record** | ✅ Yes — symmetry is the trust argument (§5c.1) |
+| **Use as a scoring input** | ❌ **No** — see below |
+
+**Why scoring stays off even with a signature:**
+
+1. **Consent at a Ministry counter is weak when the alternative is not working.** Not a legal objection — a practical one about whether drivers trust the app enough to keep it installed.
+2. **The measurement cannot support the conclusion.** Proximity + app-background tells you the *phone* was handled. It cannot distinguish the driver from a passenger, or handling while stopped from handling at 90 km/h. Scoring on a signal that misattributes produces disputes with no way to resolve them — and §3.4's whole argument is that an unfair score destroys both adoption and validity.
+3. **It is the single feature most likely to get the app uninstalled**, against a voluntary-adoption assumption the entire Phase-1 plan rests on.
+
+So the data is collected, transmitted, and shown — and it informs **aggregate research** (how often does handling coincide with detected events? does it explain phantom cornering?) — but it does not move a driver's score. That is a design recommendation, not a constraint the owner cannot lift.
 
 **Honest accuracy limits — what a loosely-mounted phone can and cannot measure.** The scoring section should not overclaim, because the pilot will expose it:
 

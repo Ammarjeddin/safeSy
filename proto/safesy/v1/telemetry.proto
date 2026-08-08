@@ -196,6 +196,24 @@ enum Rat {
   NR          = 7;
 }
 
+// Phone-handling observation.
+//
+// Collected and transmitted under consent disclosed at Ministry enrolment
+// (DESIGN.md §3.3, revised 2026-08-08). Recorded because handling is the
+// largest source of phantom IMU events — a phone lifted to an ear rotates ~90
+// degrees and accelerates hard, which reads as violent cornering.
+//
+// NOT a scoring input: proximity plus app-background tells you the PHONE was
+// handled, not WHO handled it or whether the vehicle was moving. Scoring on a
+// signal that misattributes creates disputes with no way to resolve them.
+message PhoneUsage {
+  uint32 offset_ms       = 1;
+  bool   app_foreground  = 2;
+  bool   near_ear        = 3;   // proximity covered — likely held to an ear
+  uint32 background_sec  = 4;   // cumulative this trip
+  uint32 near_ear_sec    = 5;   // cumulative this trip
+}
+
 // PHONE is permanent and first-class, never a legacy path. A mixed fleet is
 // the steady state, not a migration window — most buses will never get hardware.
 // Deliberately not named "ESP32": the Phase-2 target is undecided.

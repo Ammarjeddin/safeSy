@@ -131,7 +131,17 @@ Debug sessions therefore record **app-background time** and **proximity-sensor "
 1. **Data quality.** A gap in the trace could be a coverage dead zone, a killed process, or the driver answering a call. Indistinguishable after the fact unless recorded.
 2. **Detection validity.** A phone lifted to an ear rotates ~90° and accelerates hard. Without knowing that happened, the detector sees violent cornering. **Handling is the single largest source of phantom IMU events**, and it must be separable from real driving.
 
-⚠️ **This is deliberately not phone-handling detection for scoring.** DESIGN.md §3.3 rejects that: it converts a safety companion into a surveillance tool and undermines the voluntary-adoption story the project rests on. The signal exists to make the safety data *interpretable*, and belongs in debug builds and aggregate research — **never in a driver's score.**
+**Status (revised 2026-08-08):** this data **is** collected and transmitted in production, under consent disclosed at Ministry enrolment.
+
+The decision splits three ways:
+
+| | |
+|---|---|
+| Collect + transmit | ✅ with disclosed consent |
+| Show the driver their own record | ✅ symmetry is the trust argument |
+| **Use as a scoring input** | ❌ **no** |
+
+Scoring stays off because the measurement cannot support the conclusion: proximity + app-background tells you the *phone* was handled, not *who* handled it or whether the bus was moving. A score built on a signal that misattributes creates disputes with no resolution — the same failure mode §3.4 warns about for route-confounded scoring. See DESIGN.md §3.3 for the full reasoning.
 
 ## Related
 
