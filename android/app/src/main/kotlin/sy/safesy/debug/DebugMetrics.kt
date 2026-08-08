@@ -33,6 +33,9 @@ object DebugMetrics {
         val gpsProvider: String = "—",
         /** False when the fix came from network/fused — gnss_t_ms must not be set. */
         val fixIsGps: Boolean = false,
+        /** Satellites the chip can see, and how many are used in a fix. */
+        val satsVisible: Int = 0,
+        val satsUsed: Int = 0,
 
         // --- Detection ---
         val calibrated: Boolean = false,
