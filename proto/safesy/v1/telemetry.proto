@@ -1,0 +1,249 @@
+// safeSy telemetry wire format — v1
+//
+// THE CONTRACT. Both client packages (Kotlin/Android now, Rust/embedded later)
+// and the server encode and decode exactly this. It is the only genuinely
+// shared artifact between them.
+//
+// PERMANENT RULES — these are not style preferences:
+//   1. ADDITIVE ONLY. Never renumber, never reuse, never repurpose a field.
+//      Removed numbers get an explicit `reserved`.
+//   2. A 12-month tail of un-updated clients is permanent policy, not a
+//      transition. Ingest must accept the oldest supported client forever.
+//      Version-gating ingest would silently drop the buses on the worst
+//      connections — precisely the ones this system exists to protect.
+//   3. Field numbers 1-15 cost one tag byte; 16+ cost two. At ~12 B/point,
+//      that is ~8% of payload. Keep hot fields (Delta, RadioSample) under 16.
+//
+// See SPEC.md §S1 for the reasoning and DESIGN.md for what was rejected.
+
+syntax = "proto3";
+
+package safesy.v1;
+
+option java_package = "sy.safesy.proto";
+option java_multiple_files = true;
+
+// ---------------------------------------------------------------------------
+// Batch — the atomic unit of upload, storage, and idempotency.
+// ---------------------------------------------------------------------------
+
+// Sealed once, then IMMUTABLE. (trip_id, seq) is the server primary key;
+// re-uploads are no-ops. Immutability is what makes that safe: if a batch
+// could be re-encoded at a different resolution, the server would dedupe
+// against the first version it saw and discard the fuller one forever.
+message TelemetryBatch {
+  bytes  trip_id = 1;   // 16B UUIDv7, client-generated at trip start.
+                        // Client-generated because trip start must work offline.
+  uint32 seq     = 2;   // Gapless within a trip. ALLOCATED AT SEAL TIME, in the
+                        // same storage transaction as the bytes — never from an
+                        // in-memory counter, or a force-kill replays a seq
+                        // against different content and silently corrupts.
+
+  Anchor anchor = 3;
+
+  repeated Delta       points = 4;  // 60 @ 1 Hz
+  repeated Event       events = 5;  // sparse — usually empty
+  repeated RadioSample radio  = 7;  // ~2 per batch (30 s cadence)
+
+  // Per-BATCH, not per-trip. In paired mode the hardware owns the trip_id and
+  // the app relays; if BLE drops mid-trip the app resumes the SAME trip_id with
+  // producer=PHONE. One journey, one trip, mixed producers within it.
+  Producer producer = 6;
+
+  uint32 detect_version = 8;  // which detector produced `events`
+  uint32 app_version    = 9;
+}
+
+// ---------------------------------------------------------------------------
+// Time — never trust the phone's wall clock.
+// ---------------------------------------------------------------------------
+//
+// Cheap Android phones boot with no valid wall clock (no SIM, no network).
+// Users change it manually. NTP corrections land mid-trip. Any of those make
+// naive dt_ms deltas negative or hour-long, and every derived speed and
+// acceleration becomes garbage.
+//
+// So: three clocks, each with a defined job.
+message Anchor {
+  uint64 t_ms = 1;      // Wall clock. ADVISORY ONLY. Never order by this.
+  sint64 lat_e7 = 2;    // degrees * 1e7
+  sint64 lon_e7 = 3;
+
+  uint64 mono_ms = 4;   // Monotonic (elapsedRealtime). Survives deep sleep.
+                        // ALL intra-trip duration math uses this.
+  uint64 boot_id_lo = 5; // Random per boot. mono_ms is only comparable within
+                        // one boot_id. Distinguishes "phone rebooted" (normal
+                        // on these devices) from "clock went backward, data
+                        // is corrupt" — otherwise indistinguishable.
+
+  uint64 gnss_t_ms = 6; // GPS time — AUTHORITATIVE for absolute time.
+                        // ANDROID TRAP: Location.getTime() is satellite-derived
+                        // ONLY for GPS_PROVIDER fixes. Network/fused fixes
+                        // return the untrusted system clock. Populate this
+                        // field ONLY for genuine GPS_PROVIDER fixes; a network
+                        // timestamp masquerading as GPS time is worse than none.
+
+  bool has_fix = 7;     // false => lat/lon are meaningless; server must never
+                        // plot. Without this, proto3 defaults silently produce
+                        // (0,0) — a valid-looking coordinate off West Africa.
+}
+
+// ---------------------------------------------------------------------------
+// Delta — the bandwidth-critical message. ~12.4 B/point gzipped, measured.
+// ---------------------------------------------------------------------------
+//
+// Each field is a delta from the PREVIOUS point (or the anchor, for the first).
+// Absolute coords cost 8 B as fixed64; at 80 km/h a 1 s delta is ~2000 in 1e-7
+// units — a 2-byte zigzag varint. That is the whole trick.
+message Delta {
+  sint32 dt_ms   = 1;  // ~1000
+  sint32 dlat_e7 = 2;
+  sint32 dlon_e7 = 3;
+  sint32 dspeed  = 4;  // cm/s
+  sint32 dhead   = 5;  // decidegrees
+  uint32 hdop_q  = 6;  // GPS quality, quantized 0-15. Cheap, and it lets the
+                       // server distinguish "driver swerved" from "GPS jumped".
+}
+
+// ---------------------------------------------------------------------------
+// Event — detected on-device at 50 Hz. The 50 Hz IMU NEVER ships raw.
+// ---------------------------------------------------------------------------
+//
+// Edge detection is what makes a 3-hour desert dead zone survivable: the events
+// survive the gap, not just the raw points. Streaming raw IMU would cost
+// ~894 MB/month/bus versus ~11.7 MB for this — and would need ~59 min of
+// continuous EDGE to drain a 4 h backlog, versus ~45 s.
+message Event {
+  enum Kind {
+    KIND_UNSPECIFIED = 0;
+    HARSH_BRAKE      = 1;
+    HARSH_ACCEL      = 2;
+    HARSH_CORNER     = 3;
+    SPEEDING_ENTER   = 4;
+    SPEEDING_EXIT    = 5;
+    POSSIBLE_CRASH   = 6;
+    TRIP_START       = 7;
+    TRIP_END         = 8;
+    COVERAGE_LOST    = 9;
+    COVERAGE_REGAIN  = 10;
+    MOUNT_SHIFTED    = 11;  // phone re-oriented mid-trip; suppress IMU events
+                            // until the gravity vector re-converges
+    SOS              = 12;  // driver-initiated
+  }
+
+  Kind   kind      = 1;
+  uint32 offset_ms = 2;  // from batch anchor
+  uint32 severity  = 3;  // 0-1000, normalized per spec
+
+  // Raw IMU window around the event. Enables retroactive FALSE-POSITIVE removal
+  // — but NOT false-negative recovery, since a missed event leaves no trace
+  // anywhere. Therefore: bias detection thresholds LOW, over-detect, and filter
+  // server-side. That is the direction replay can fix.
+  //
+  // Absent when the per-trip cap is hit. POSSIBLE_CRASH is EXEMPT from the cap:
+  // a crash reconstruction must never lose its slot to earlier cornering events.
+  bytes  snippet     = 4;
+  uint32 snippet_fmt = 5;  // see SnippetFormat
+}
+
+// NEVER average raw IMU to save space. A ~120 ms crash impact averaged into
+// 500 ms buckets retains 14% of its peak — a real 1.2 g impact reads as 0.17 g
+// and the 3 g threshold never fires. The ENVELOPE form is the version of that
+// idea that works: min/max/RMS keeps the peak explicitly instead of smearing it.
+enum SnippetFormat {
+  SNIPPET_NONE     = 0;
+  SNIPPET_INT16_50 = 1;  // int16 @ 50 Hz, ~5 KB/10 s gz — POSSIBLE_CRASH
+  SNIPPET_ENV_100  = 2;  // min/max/RMS per 100 ms, ~1 KB/10 s gz — routine
+}
+
+// ---------------------------------------------------------------------------
+// RadioSample — coverage recording. An INDEPENDENT channel by design.
+// ---------------------------------------------------------------------------
+//
+// This CANNOT be inferred from telemetry arrival gaps. A late-arriving point
+// could mean no coverage, a killed process, a dead battery, or a trip ending —
+// indistinguishable after the fact. And the most valuable observation of all
+// ("covered here, but 2G-only / marginal") leaves no trace whatsoever in a
+// stream that only records what got through.
+//
+// Sampled every ~30 s while a trip is ACTIVE, REGARDLESS of connectivity.
+// ~0.3 MB/month. Record rat=NONE EXPLICITLY: a dead zone is data, not absence
+// of data. This is exactly why crowdsourced datasets are unusable here —
+// public data shows zero cells in Deir ez-Zor city, a functioning provincial
+// capital with working service.
+message RadioSample {
+  uint32 offset_ms = 1;
+  Rat    rat       = 2;
+  sint32 rssi_dbm  = 3;
+  uint32 cell_id   = 4;  // Aggregate coverage map ONLY. MUST age out with
+                         // location detail — per-driver cell IDs are a
+                         // finer-grained location trail than GPS.
+  uint32 mcc_mnc   = 5;  // Syriatel vs MTN differ by region
+  bool   data_ok   = 6;  // attached AND a request actually succeeded.
+                         // Attached != usable.
+}
+
+// `rat` matters as much as presence: with 2G/3G retirement planned, EDGE-only
+// vs LTE is the difference between "covered" and "about to go dark".
+enum Rat {
+  RAT_UNKNOWN = 0;
+  NONE        = 1;  // explicitly no service — this is the valuable one
+  GPRS        = 2;
+  EDGE        = 3;
+  UMTS        = 4;
+  HSPA        = 5;
+  LTE         = 6;
+  NR          = 7;
+}
+
+// PHONE is permanent and first-class, never a legacy path. A mixed fleet is
+// the steady state, not a migration window — most buses will never get hardware.
+// Deliberately not named "ESP32": the Phase-2 target is undecided.
+enum Producer {
+  PRODUCER_UNSPECIFIED = 0;
+  PHONE                = 1;
+  HARDWARE             = 2;
+}
+
+// ---------------------------------------------------------------------------
+// Ingest envelope
+// ---------------------------------------------------------------------------
+
+// Backfill drains in one round trip. Reconnection windows on this network are
+// minutes long while passing a town, so DRAIN ORDER matters, not just drain:
+// POSSIBLE_CRASH first, then recent status, then bulk backlog.
+message IngestRequest {
+  repeated TelemetryBatch batches = 1;
+}
+
+// PER-BATCH ack. A partial failure must not be ambiguous, and a permanently
+// rejected batch is quarantined and flagged — never silently dropped.
+message IngestResponse {
+  repeated BatchAck acks = 1;
+
+  // Signed threshold/profile config, piggybacked. Without this, every threshold
+  // change is an app update into the 12-month tail — and tuning during the
+  // pilot is the pilot's entire purpose.
+  bytes  config_blob      = 2;
+  uint32 config_version   = 3;
+
+  // Fresh token. A STALE TOKEN MUST NEVER BLOCK INGEST: buses reconnect after
+  // hours offline holding expired tokens, and rejecting them would discard data
+  // from exactly the worst-connected vehicles.
+  string refreshed_token  = 4;
+}
+
+message BatchAck {
+  bytes  trip_id = 1;
+  uint32 seq     = 2;
+  Status status  = 3;
+  string detail  = 4;  // human-readable, for the quarantine log
+
+  enum Status {
+    STATUS_UNSPECIFIED = 0;
+    ACCEPTED           = 1;
+    DUPLICATE          = 2;  // already have it — success, not an error
+    REJECTED_RETRY     = 3;  // transient; client retries with backoff
+    REJECTED_PERMANENT = 4;  // malformed; client quarantines and flags
+  }
+}
