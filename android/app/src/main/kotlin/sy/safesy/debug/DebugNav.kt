@@ -34,10 +34,11 @@ import androidx.compose.ui.unit.sp
 fun DebugNav(
     recording: Boolean,
     onToggleRecording: () -> Unit,
+    sessionContent: @Composable () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var page by remember { mutableIntStateOf(0) }
-    val pages = listOf("METRICS", "GNSS", "PERMISSIONS")
+    val pages = listOf("SESSION", "METRICS", "GNSS", "PERMISSIONS")
 
     Column(modifier = modifier.fillMaxSize().background(Color(0xFFFFFFFF))) {
         // Arrow bar, pinned at the top so it never scrolls away.
@@ -65,12 +66,13 @@ fun DebugNav(
         }
 
         when (page) {
-            0 -> DebugScreen(
+            0 -> sessionContent()
+            1 -> DebugScreen(
                 recording = recording,
                 onToggleRecording = onToggleRecording,
-                onOpenPermissions = { page = 2 },
+                onOpenPermissions = { page = 3 },
             )
-            1 -> GnssScreen()
+            2 -> GnssScreen()
             else -> PermissionsScreen()
         }
     }

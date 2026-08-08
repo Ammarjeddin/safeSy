@@ -98,6 +98,30 @@ Good first tasks:
 
 ⚠️ **Thresholds are placeholders.** They come from the spec and have never met a real Syrian road or a real bus suspension. Do not treat them as tuned.
 
+## ⚠️ The mounting assumption may be wrong
+
+The detector currently assumes a **fixed mount** — orientation is learned once at trip start and any large change is treated as a fault (`MOUNT_SHIFTED`), suppressing detection until it settles.
+
+**Syrian bus drivers are unlikely to use a cradle.** Realistically the phone will be:
+
+| Placement | What it does to the detector |
+|---|---|
+| **Shirt pocket** | Rotates with the driver's torso on every lean, every turn, every time they check a mirror. Orientation is *continuously* changing, not occasionally. |
+| **Trouser pocket** | Worse — also flexes with leg movement and pedal work |
+| **Loose on the dashboard** | Slides on every corner and every brake. `MOUNT_SHIFTED` would fire constantly |
+| **Cup holder / bag** | Roughly fixed, but at an arbitrary and often near-vertical angle |
+| **Cradle** | What the current design assumes |
+
+**Why this matters:** if the phone re-orients continuously, "learn the mount once, flag changes as faults" is the wrong model. IMU-derived events (cornering, rollover) may be unusable in a pocket, and the honest response may be to **fall back to GPS-only metrics for those placements** — speed, variance, duration, and braking from the speed derivative are all mount-independent (§S3.3).
+
+**This must be measured, not guessed.** Every debug session now records its placement, so traces can be compared across them. The open questions:
+
+1. Does a pocket produce so many `MOUNT_SHIFTED` events that detection is suppressed most of the time?
+2. Can harsh braking still be detected from GPS alone when IMU events are unusable?
+3. Should `VehicleProfile` carry a *placement* field that disables IMU-derived metrics?
+
+Until there is pocket data, **treat cornering and rollover as cradle-only capabilities.**
+
 ## Related
 
 Runs only while [`policy/`](../policy/README.md) says `ACTIVE` · Events are packed by [`outbox/`](../outbox/README.md) · Scoring is **not** here — it's in [`server/`](../../../../../../../../server/README.md)
