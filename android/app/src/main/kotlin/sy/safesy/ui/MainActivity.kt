@@ -3,23 +3,30 @@ package sy.safesy.ui
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.os.SystemClock
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
+import kotlinx.coroutines.delay
 import sy.safesy.BuildConfig
-import sy.safesy.debug.SensorPump
+import sy.safesy.debug.DebugNav
+import sy.safesy.debug.SessionScreen
+import sy.safesy.debug.SessionStore
 
 class MainActivity : ComponentActivity() {
 
-    private var pump: SensorPump? = null
+    private var pump: sy.safesy.debug.SensorPump? = null
 
     private val requestPermissions = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -32,17 +39,67 @@ class MainActivity : ComponentActivity() {
         // "while using the app", so a sleeping screen silently stops GPS.
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
+        val store = SessionStore(this)
+
         setContent {
             MaterialTheme {
                 Surface {
-                    var showPermissions by remember { mutableStateOf(false) }
                     var recording by remember { mutableStateOf(false) }
+                    var name by remember { mutableStateOf("") }
+                    var placement by remember { mutableStateOf(SessionStore.PLACEMENTS.first()) }
+                    var sessionId by remember { mutableLongStateOf(0L) }
+                    var startedAt by remember { mutableLongStateOf(0L) }
+                    var elapsed by remember { mutableLongStateOf(0L) }
+                    var marks by remember { mutableIntStateOf(0) }
+                    var lastMark by remember { mutableStateOf<String?>(null) }
+                    var sessions by remember { mutableStateOf(store.list()) }
 
-                    sy.safesy.debug.DebugNav(
+                    LaunchedEffect(recording) {
+                        while (recording) {
+                            elapsed = (SystemClock.elapsedRealtime() - startedAt) / 1000
+                            delay(1000)
+                        }
+                    }
+
+                    DebugNav(
                         recording = recording,
-                        onToggleRecording = {
-                            recording = !recording
-                            if (recording) startPump() else stopPump()
+                        onToggleRecording = { /* session page owns start/stop */ },
+                        sessionContent = {
+                            SessionScreen(
+                                recording = recording,
+                                sessionName = name,
+                                placement = placement,
+                                elapsedSec = elapsed,
+                                markCount = marks,
+                                lastMark = lastMark,
+                                onNameChange = { name = it },
+                                onPlacementChange = { placement = it },
+                                onStart = {
+                                    val now = System.currentTimeMillis()
+                                    sessionId = store.createSession(
+                                        name.ifBlank { "session" }, now, placement,
+                                    )
+                                    startedAt = SystemClock.elapsedRealtime()
+                                    elapsed = 0; marks = 0; lastMark = null
+                                    recording = true
+                                    startPump(store.sessionDir(sessionId))
+                                },
+                                onStop = {
+                                    recording = false
+                                    stopPump()
+                                    store.finish(sessionId, elapsed)
+                                    sessions = store.list()
+                                },
+                                onMark = { label ->
+                                    store.addMark(sessionId, elapsed, label)
+                                    marks++
+                                    lastMark = "$label @ ${elapsed}s"
+                                },
+                                sessions = sessions,
+                                onDelete = { id ->
+                                    store.delete(id); sessions = store.list()
+                                },
+                            )
                         },
                     )
                 }
@@ -58,18 +115,15 @@ class MainActivity : ComponentActivity() {
         if (needed.isNotEmpty()) requestPermissions.launch(needed.toTypedArray())
     }
 
-    /**
-     * Debug harness only. The production path is the foreground service in
-     * policy/ + outbox/ (Step 3); recording is driver-initiated there too.
-     */
-    private fun startPump() {
+    private fun startPump(dir: java.io.File) {
         if (!BuildConfig.DEBUG) return
-        if (pump == null) pump = SensorPump(this)
+        pump = sy.safesy.debug.SensorPump(this, dir)
         pump?.start()
     }
 
     private fun stopPump() {
         pump?.stop()
+        pump = null
     }
 
     override fun onDestroy() {

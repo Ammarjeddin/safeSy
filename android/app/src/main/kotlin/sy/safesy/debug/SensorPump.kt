@@ -37,7 +37,11 @@ import sy.safesy.detect.VehicleProfile
  *  - only GPS_PROVIDER fixes carry satellite time; network/fused fixes return
  *    the untrusted system clock and must never populate gnss_t_ms
  */
-class SensorPump(private val context: Context) : SensorEventListener, LocationListener {
+class SensorPump(
+    private val context: Context,
+    /** When set, traces are written into that session's folder. */
+    private val sessionDir: File? = null,
+) : SensorEventListener, LocationListener {
 
     private val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
     private val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
@@ -82,15 +86,15 @@ class SensorPump(private val context: Context) : SensorEventListener, LocationLi
         txAtStart = TrafficStats.getUidTxBytes(uid)
         rxAtStart = TrafficStats.getUidRxBytes(uid)
 
-        val dir = context.getExternalFilesDir(null)
+        val dir = sessionDir ?: context.getExternalFilesDir(null)
         val stamp = System.currentTimeMillis()
-        traceFile = File(dir, "drive-$stamp.csv").apply {
+        traceFile = File(dir, if (sessionDir != null) "trace.csv" else "drive-$stamp.csv").apply {
             appendText("elapsed_s,lat,lon,speed_kmh,hdop,provider,imu_hz,gnss_hz," +
                 "accel_total,accel_vert,accel_horiz,gps_accel,calibrated,mount_suppressed," +
                 "sats_seen,sats_used," +
                 "rat,rssi,data_ok,batt_pct,batt_temp_c,charging,tx_bytes,rx_bytes\n")
         }
-        eventFile = File(dir, "events-$stamp.csv").apply {
+        eventFile = File(dir, if (sessionDir != null) "events.csv" else "events-$stamp.csv").apply {
             appendText("elapsed_s,kind,severity,peak,duration_ms\n")
         }
 
