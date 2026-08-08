@@ -36,6 +36,8 @@ object DebugMetrics {
         /** Satellites the chip can see, and how many are used in a fix. */
         val satsVisible: Int = 0,
         val satsUsed: Int = 0,
+        /** Per-satellite carrier-to-noise density, dB-Hz. Empty = nothing received. */
+        val satCn0: List<Float> = emptyList(),
 
         // --- Detection ---
         val calibrated: Boolean = false,

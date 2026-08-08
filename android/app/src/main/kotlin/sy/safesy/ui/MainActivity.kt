@@ -15,8 +15,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
 import sy.safesy.BuildConfig
-import sy.safesy.debug.DebugScreen
-import sy.safesy.debug.PermissionsScreen
 import sy.safesy.debug.SensorPump
 
 class MainActivity : ComponentActivity() {
@@ -40,20 +38,13 @@ class MainActivity : ComponentActivity() {
                     var showPermissions by remember { mutableStateOf(false) }
                     var recording by remember { mutableStateOf(false) }
 
-                    if (showPermissions) {
-                        PermissionsScreen()
-                        // Back returns to the metrics screen.
-                        androidx.activity.compose.BackHandler { showPermissions = false }
-                    } else {
-                        DebugScreen(
-                            recording = recording,
-                            onToggleRecording = {
-                                recording = !recording
-                                if (recording) startPump() else stopPump()
-                            },
-                            onOpenPermissions = { showPermissions = true },
-                        )
-                    }
+                    sy.safesy.debug.DebugNav(
+                        recording = recording,
+                        onToggleRecording = {
+                            recording = !recording
+                            if (recording) startPump() else stopPump()
+                        },
+                    )
                 }
             }
         }
