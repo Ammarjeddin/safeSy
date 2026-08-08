@@ -1,0 +1,19 @@
+# Android / Gradle
+.gradle/
+build/
+local.properties
+*.apk
+*.aab
+captures/
+.cxx/
+# macOS
+.DS_Store
+# IDE
+.idea/
+*.iml
+# Generated protobuf
+gen/
+# Secrets — never commit
+*.jks
+*.keystore
+secrets.properties
