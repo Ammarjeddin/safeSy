@@ -183,6 +183,8 @@ VehicleProfile {
 }
 ```
 
+**Placement is inferred, not asked** (`PlacementClassifier`). A driver will not select a mounting mode before every trip, and a wrong answer is worse than none. Classified over the first 60 s from orientation variance, vibration coupling, and proximity; the verdict is **held for the trip** so thresholds cannot move mid-journey. `imuEventsTrustworthy()` returns false for `CARRIED` and while `UNKNOWN` — GPS-derived metrics stay valid regardless.
+
 Must handle: **gravity separation** (complementary/Madgwick filter — the phone is mounted at an unknown angle; getting this wrong makes every trip full of phantom braking), **speed fusion** (GPS accurate but 1 Hz and laggy; accel fast but drifts), **GPS quality gating** (hdop spike + implausible jump must suppress detection, not emit phantom corners), and **continuous re-estimation of the gravity vector** with a `MOUNT_SHIFTED` event when orientation changes suddenly.
 
 **Bias thresholds LOW.** Over-detection is recoverable server-side from snippets; missed events leave no trace anywhere and are permanent.
@@ -197,6 +199,10 @@ Must handle: **gravity separation** (complementary/Madgwick filter — the phone
 | Harsh brake/accel | Medium | correctable from GPS speed derivative |
 | Harsh cornering | Medium-low | needs stable vehicle-frame orientation |
 | Rollover proxy | Low | alerting hint only, never a scoring input |
+
+**Validated on real hardware (2026-08-08, Xiaomi Mi 11 Lite 5G):** IMU 49.9 Hz sustained · gravity separation leaves **0.041 m/s² of 9.81** stationary and **0.877 m/s² horizontal mean** while driving · **zero false positives** across 75 s of driving · GNSS TTFF 24 s in open sky.
+
+⚠️ **Still unproven: that it catches true positives.** No deliberate hard brake has been recorded. Every threshold remains a spec placeholder that has never met a Syrian road. See [`docs/STATUS.md`](../STATUS.md).
 
 ### S3.5 Phone-handling — collected under consent, not scored
 

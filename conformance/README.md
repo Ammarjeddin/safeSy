@@ -2,7 +2,9 @@
 
 **What lives here:** golden fixtures that keep two independent client implementations behaviourally identical.
 
-**Owner:** unassigned · **Status:** not started (Step 0 remainder)
+**Owner:** unassigned · **Status:** ⬜ **empty** — no fixtures exist
+
+Same risk as `spec/`: the whole two-package model rests on these fixtures, and none have been written. Cheap now; expensive once a second implementation exists.
 
 ---
 

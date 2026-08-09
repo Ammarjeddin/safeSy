@@ -2,7 +2,11 @@
 
 **What lives here:** durable storage of trip data, sealing it into immutable batches, and getting those batches to the server across a network that fails for hours at a time.
 
-**Owner:** unassigned · **Status:** stub (Step 3/4)
+**Owner:** unassigned · **Status:** ⬜ **not started** — this is the biggest gap in the app
+
+Nothing here is implemented: no Room schema, no `BatchSealer`, no `OutboxWorker`, no upload. Debug sessions write CSV files directly to external storage, which is fine for testing and is **not** the production path.
+
+This is the highest-value section for a contributor to pick up — everything upstream of it works.
 
 ---
 

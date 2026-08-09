@@ -2,6 +2,8 @@
 
 *v0.3 incorporated an adversarial review. v0.4 replaced the shared-native-library model with two independent client packages bound by a shared protocol and conformance suite. **v0.5 adds measured Syrian coverage-gap data (§2.6b), deletes the preview lane against a stated 5-minute liveness requirement (§2.3), and fixes the snippet encoding (§2.7).** Corrections to earlier claims are marked inline rather than silently edited, so the reasoning stays auditable.*
 
+> **Implementation status, 2026-08-08.** This document is the *reasoning record*. For what actually exists and what is still assumed, see [`docs/STATUS.md`](../STATUS.md) — the detection engine is built and validated on real hardware; storage, upload, server, and driver UI are not.
+
 **Scope of this document:** the architecture for the Phase-1 Android app and its backend, designed so that Phase-2 embedded hardware becomes an additional telemetry source without rewriting the server, the scoring, or the data model.
 
 **Explicitly out of scope for v1 (but reserved for in the design):** passenger manifests, ticketing, LoRa mesh, OBD2, dashcam.

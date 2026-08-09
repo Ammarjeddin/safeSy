@@ -115,7 +115,8 @@ The repo is organised into **sections** — each a directory with its own README
 | [**Detection**](android/app/src/main/kotlin/sy/safesy/detect/) | Crash & driving-behaviour detection from 50 Hz IMU + GPS. Pure computation — no Android APIs. | Kotlin, signal processing | Core done |
 | [**Policy**](android/app/src/main/kotlin/sy/safesy/policy/) | Trip lifecycle and the rules for when the app may collect anything. Privacy guarantees live here. | Kotlin | Partial |
 | [**Outbox**](android/app/src/main/kotlin/sy/safesy/outbox/) | Durable storage, batch sealing, and upload across a network that fails for hours. | Kotlin, Room, WorkManager | Stub |
-| [**App UI**](android/app/src/main/kotlin/sy/safesy/ui/) | Drive Mode, trip screens, SOS, onboarding. **Arabic-first.** | Compose, design, **native Arabic** | Placeholder |
+| [**App UI**](android/app/src/main/kotlin/sy/safesy/ui/) | Drive Mode, trip screens, SOS, onboarding. **Arabic-first.** | Compose, design, **native Arabic** | Not started |
+| [**Debug harness**](android/app/src/main/kotlin/sy/safesy/debug/) | Drive-test tooling: sessions, ground-truth marks, live metrics, GNSS diagnostics | Kotlin, Compose | ✅ working |
 | [**Server & Portal**](server/) | Ingest, storage, scoring, Ministry portal, enrolment. No Android needed. | Backend, PostGIS | Not started |
 | [**Wire Protocol**](proto/) | The contract shared by every client. Additive-only, forever. | protobuf | v1 done |
 | [**Spec**](spec/) | Sealing, `seq`, and time rules as prose. | Writing | Not started |
@@ -134,15 +135,21 @@ docs/
 
 ## Status
 
+**The app runs on real hardware and records analysable drives.** It does not yet store to Room, seal batches, or talk to a server.
+
 | Step | Deliverable | |
 |---|---|---|
-| 0 | `safesy-proto` + spec + conformance fixtures | ✅ |
-| 1 | Kotlin detection engine + replay harness | ⬜ next |
+| 0 | `safesy-proto` + spec + conformance fixtures | 🟡 proto done; spec/conformance empty |
+| 1 | Kotlin detection engine + replay harness | ✅ **done** |
 | 2 | Ingest + storage + scoring + config channel | ⬜ |
-| 3 | Android shell — foreground service, Room, outbox | 🔨 scaffolded |
-| 4 | **8-hour real-drive spike** — go/no-go gate | ⬜ |
+| 3 | Android shell — foreground service, Room, outbox | 🟡 debug harness only |
+| 4 | **8-hour real-drive spike** — go/no-go gate | ⬜ short drives so far |
 | 5 | Arabic Drive Mode + Ministry map | ⬜ |
 | 6 | Pilot — 1 cooperative, 10–20 buses, 4 weeks | ⬜ |
+
+**Measured on a Xiaomi Mi 11 Lite 5G:** IMU 49.9 Hz sustained · gravity separation leaves **0.041 m/s² of 9.81** · **zero false positives** across 75 s of real driving · GNSS TTFF 24 s in open sky.
+
+⚠️ **Every detection threshold is still a placeholder** that has never met a Syrian road. Full status, including what is assumed rather than proven: [`docs/STATUS.md`](docs/STATUS.md)
 
 ## Getting started
 

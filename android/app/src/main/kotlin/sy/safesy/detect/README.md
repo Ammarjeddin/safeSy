@@ -2,7 +2,11 @@
 
 **What lives here:** turning 50 Hz accelerometer + 1 Hz GPS into a handful of events. Crash detection, harsh braking, cornering, mount-shift.
 
-**Owner:** unassigned · **Status:** core complete, needs real-drive tuning
+**Owner:** unassigned · **Status:** ✅ core complete · ⚠️ thresholds uncalibrated
+
+**Validated on real hardware (2026-08-08):** gravity separation leaves **0.041 m/s² of a 9.81 m/s² raw signal** stationary, and **0.877 m/s² horizontal mean** while driving — plausible driving values, not leaked gravity. **Zero false positives** across 75 s of real driving.
+
+**Still unproven:** that it catches *true* positives. No deliberate hard brake has been recorded yet.
 
 ---
 
@@ -40,6 +44,7 @@ So: over-detect, and filter server-side.
 | `Types.kt` | `ImuSample`, `GnssSample`, `VehicleProfile`, `DetectionConfig` |
 | `OrientationEstimator.kt` | Gravity separation — the hardest and most important piece |
 | `DrivingDetector.kt` | Event detection and the sustained-excursion filter |
+| `PlacementClassifier.kt` | Infers where the phone is; gates whether IMU events are trusted |
 
 ### Gravity separation is the whole ballgame
 
