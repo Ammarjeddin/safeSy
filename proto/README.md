@@ -2,7 +2,9 @@
 
 **What lives here:** `safesy-proto` — the contract shared by the Android app, the server, and any future embedded client.
 
-**Owner:** unassigned · **Status:** v1 complete
+**Owner:** unassigned · **Status:** ✅ v1 complete and in use
+
+Generates cleanly, compiles into the Android build, and every PR runs a backward-compatibility check. `PhoneUsage` was added 2026-08-08 (additive).
 
 ---
 

@@ -2,7 +2,9 @@
 
 **What lives here:** ingest, storage, scoring, the Ministry portal, and enrolment.
 
-**Owner:** unassigned · **Status:** not started (Step 2)
+**Owner:** unassigned · **Status:** ⬜ **not started** — no code exists
+
+Nothing has been built. The wire schema it must consume is complete and frozen-by-convention (`proto/`), so this section can be built entirely against the schema without touching Android.
 
 ---
 

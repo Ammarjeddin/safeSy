@@ -2,7 +2,11 @@
 
 **What lives here:** everything the driver sees. Drive Mode, trip start/end, post-trip score, SOS, onboarding.
 
-**Owner:** unassigned · **Status:** placeholder (Step 5)
+**Owner:** unassigned · **Status:** ⬜ **no driver-facing UI exists yet**
+
+`MainActivity` currently hosts the *debug* screens (session recording, metrics, GNSS, permissions). None of that is Drive Mode, and none of it is Arabic. Step 5 builds the real thing.
+
+The debug UI did establish one useful finding: **dark text on white is far more readable in direct sunlight** than a dark theme, because an LCD's black pixels still emit light. Worth carrying into Drive Mode.
 
 ---
 

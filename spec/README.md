@@ -2,7 +2,9 @@
 
 **What lives here:** the rules that are prose rather than code — batch sealing, `seq` allocation, time handling, outbox policy, degradation.
 
-**Owner:** unassigned · **Status:** not started (Step 0 remainder)
+**Owner:** unassigned · **Status:** ⬜ **empty** — the rules exist only in code comments and DESIGN.md
+
+⚠️ This is a real risk to the portability requirement. The sealing, `seq`, and time rules are currently only in Kotlin comments and prose in `docs/architecture/`. Until they are written here, a future Rust implementation has nothing normative to implement against. (Step 0 remainder)
 
 ---
 

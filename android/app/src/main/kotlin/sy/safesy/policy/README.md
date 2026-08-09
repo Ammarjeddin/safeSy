@@ -2,7 +2,9 @@
 
 **What lives here:** the trip lifecycle state machine and the rules that decide *when* the app is allowed to collect anything at all.
 
-**Owner:** unassigned · **Status:** partial (state machine done, service wiring is Step 3)
+**Owner:** unassigned · **Status:** 🟡 state machine + tests done; **no foreground service yet**
+
+`TripState` and `OrphanResolver` are implemented and tested. `TripService` is still a stub — the debug harness (`debug/SensorPump`) currently drives sensing instead, foreground-only. Wiring the real service is Step 3.
 
 ---
 
