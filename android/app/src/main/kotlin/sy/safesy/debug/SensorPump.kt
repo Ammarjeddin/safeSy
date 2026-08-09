@@ -79,6 +79,23 @@ class SensorPump(
     private var traceFile: File? = null
     private var eventFile: File? = null
 
+    /**
+     * FULL 50 Hz raw IMU, debug sessions only.
+     *
+     * Production ships events only (~11.9 MB/month vs ~894 MB) — that trade is
+     * what makes the whole design viable. But during testing the raw stream is
+     * irreplaceable: a drive can be replayed offline against any threshold we
+     * want to try, instead of needing a fresh drive per experiment.
+     *
+     * ~5.5 MB per driving hour uncompressed. Free on a phone, and the recording
+     * cannot be recreated once the drive is over.
+     *
+     * Buffered because appending 50x/second unbuffered would thrash the FS and
+     * distort the very timing we are trying to measure.
+     */
+    private var rawFile: java.io.BufferedWriter? = null
+    private var rawRows = 0L
+
     fun start() {
         startedAtMs = SystemClock.elapsedRealtime()
         lastRateCalcMs = startedAtMs
@@ -98,6 +115,14 @@ class SensorPump(
         }
         eventFile = File(dir, if (sessionDir != null) "events.csv" else "events-$stamp.csv").apply {
             appendText("elapsed_s,kind,severity,peak,duration_ms\n")
+        }
+        runCatching {
+            rawFile = File(dir, "raw-imu.csv").bufferedWriter().apply {
+                // Device-frame values, exactly as the sensor reports them —
+                // NOT gravity-corrected. Correction is the detector's job and
+                // we want to be able to re-run it differently later.
+                write("t_ms,ax,ay,az,gx,gy,gz\n")
+            }
         }
 
         // SENSOR_DELAY_GAME ~= 50 Hz, which is what the spec assumes.
@@ -147,6 +172,8 @@ class SensorPump(
     }
 
     fun stop() {
+        runCatching { rawFile?.flush(); rawFile?.close() }
+        rawFile = null
         sensorManager.unregisterListener(this)
         runCatching { locationManager.removeUpdates(this) }
         runCatching { locationManager.unregisterGnssStatusCallback(gnssCallback) }
@@ -182,6 +209,18 @@ class SensorPump(
         detector.onImu(sample)
         placement.onImu(sample)
         imuCount++
+
+        // Full-rate raw capture. Written before any processing so the file is a
+        // faithful record of what the sensor reported.
+        runCatching {
+            rawFile?.write(
+                "$tMs,${accel[0]},${accel[1]},${accel[2]},${gyro[0]},${gyro[1]},${gyro[2]}\n"
+            )
+            rawRows++
+            // Flush periodically: MIUI can kill the process at any moment, and
+            // an unflushed buffer is data that never existed.
+            if (rawRows % 250L == 0L) rawFile?.flush()
+        }
         drainAndPublish(tMs)
     }
 
