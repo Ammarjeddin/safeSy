@@ -94,7 +94,15 @@ Good first tasks:
 - **Speed-fusion Kalman filter** — GPS is accurate but 1 Hz and laggy; accelerometer is fast but drifts. Fusing them gives braking events both correct timing *and* correct magnitude.
 - **Rollover proxy** — sustained lateral g + roll rate. Buses are top-heavy; cars usually aren't.
 - **Cornering speed vs. curve radius** — derive radius from heading-rate/speed. Catches the specific failure mode that rolls a bus.
-- **Replay harness** — load recorded drives from CSV/JSON and replay them offline. This is the highest-value item on the list.
+- ~~Replay harness~~ **— built.** `tools/replay.py` replays a recorded session against any threshold. Full 50 Hz raw IMU is captured to `raw-imu.csv` during debug sessions (~5.5 MB/driving-hour), so **one real drive can answer "what would have happened at threshold X?" for any X** — instead of needing a fresh drive per experiment. Drives on Syrian roads are expensive; replays are free.
+
+  ```
+  tools/replay.py session-dir/            # summarise, cross-referenced with human marks
+  tools/replay.py session-dir/ --sweep    # find where events start appearing
+  tools/replay.py session-dir/ --brake 2.0
+  ```
+
+  ⚠️ Production still ships **events only** (~11.9 MB/month vs ~894 MB) — raw capture is a debug-build facility, not a change to the wire design.
 
 ⚠️ **Thresholds are placeholders.** They come from the spec and have never met a real Syrian road or a real bus suspension. Do not treat them as tuned.
 
